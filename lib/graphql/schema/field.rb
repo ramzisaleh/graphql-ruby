@@ -544,7 +544,9 @@ module GraphQL
       end
 
       def authorized?(object, args, context)
-        if @resolver_class
+        if context[:skip_built_in_authorization]
+          true
+        elsif @resolver_class
           # The resolver will check itself during `resolve()`
           @resolver_class.authorized?(object, context)
         else

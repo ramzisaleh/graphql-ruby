@@ -146,17 +146,21 @@ module GraphQL
       # @raise [GraphQL::UnauthorizedError] To signal an authorization failure
       # @return [Boolean, early_return_data] If `false`, execution will stop (and `early_return_data` will be returned instead, if present.)
       def authorized?(**inputs)
-        self.class.arguments.each_value do |argument|
-          arg_keyword = argument.keyword
-          if inputs.key?(arg_keyword) && !(arg_value = inputs[arg_keyword]).nil? && (arg_value != argument.default_value)
-            arg_auth, err = argument.authorized?(self, arg_value, context)
-            if !arg_auth
-              return arg_auth, err
+        if context[:skip_built_in_authorization]
+          true
+        else
+          self.class.arguments.each_value do |argument|
+            arg_keyword = argument.keyword
+            if inputs.key?(arg_keyword) && !(arg_value = inputs[arg_keyword]).nil? && (arg_value != argument.default_value)
+              arg_auth, err = argument.authorized?(self, arg_value, context)
+              if !arg_auth
+                return arg_auth, err
+              else
+                true
+              end
             else
               true
             end
-          else
-            true
           end
         end
       end

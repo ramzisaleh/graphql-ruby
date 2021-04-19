@@ -246,11 +246,17 @@ module GraphQL
                   # Use this flag to tell Interpreter::Arguments to add itself
                   # to the keyword args hash _before_ freezing everything.
                   extra_args[:argument_details] = :__arguments_add_self
+                when :irep_node
+                  # This is used by __typename to implement the field on the legacy runtime,
+                  # but it has no meaning in this context.
+                  # Skip it here so we don't incur the overhead on the `.merge_extras` below.
                 else
                   extra_args[extra] = field_defn.fetch_extra(extra, context)
                 end
               end
-              resolved_arguments = resolved_arguments.merge_extras(extra_args)
+              if extra_args.any?
+                resolved_arguments = resolved_arguments.merge_extras(extra_args)
+              end
               resolved_arguments.keyword_arguments
             end
 
@@ -636,14 +642,11 @@ module GraphQL
         end
 
         def authorized_new(type, value, context, path)
-          trace_payload = { context: context, type: type, object: value, path: path }
-
-          auth_val = context.query.trace("authorized", trace_payload) do
-            type.authorized_new(value, context)
-          end
+          auth_val = type.authorized_new(value, context)
 
           if context.schema.lazy?(auth_val)
             GraphQL::Execution::Lazy.new do
+              trace_payload = { context: context, type: type, object: value, path: path }
               context.query.trace("authorized_lazy", trace_payload) do
                 context.schema.sync_lazy(auth_val)
               end

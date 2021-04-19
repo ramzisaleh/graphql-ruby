@@ -210,7 +210,8 @@ module GraphQL
                   # and resolved to the right type,
                   # now apply the `.authorized?` class method if there is one
                   if (class_based_type = application_object_type.type_class)
-                    context.schema.after_lazy(class_based_type.authorized?(application_object, context)) do |authed|
+                    authed_val = context[:skip_built_in_authorization] ? true : class_based_type.authorized?(application_object, context)
+                    context.schema.after_lazy(authed_val) do |authed|
                       if authed
                         application_object
                       else

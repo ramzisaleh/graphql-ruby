@@ -14,6 +14,7 @@ class GraphQLGeneratorsInstallGeneratorTest < Rails::Generators::TestCase
     end
   end
 
+  focus
   test "it generates a folder structure" do
     run_generator([ "--relay", "false"])
 
@@ -121,13 +122,22 @@ module Types
 end
 RUBY
     assert_file "app/graphql/types/base_interface.rb", expected_base_interface
-
+    p "running again"
     # Run it again and make sure the gemfile only contains graphiql-rails once
     FileUtils.cd(File.join(destination_root)) do
-      `rails g graphql:install --relay false`
+      puts `rails g graphql:install --relay false`
     end
     assert_file "Gemfile" do |contents|
       assert_equal 1, contents.scan(/graphiql-rails/).length
+    end
+
+    # And then make sure it cleans up properly
+    p "running destroy"
+    FileUtils.cd(File.join(destination_root)) do
+      puts `rails d graphql:install --relay false`
+    end
+    assert_file "Gemfile" do |contents|
+      assert_equal 0, contents.scan(/graphiql-rails/).length
     end
   end
 

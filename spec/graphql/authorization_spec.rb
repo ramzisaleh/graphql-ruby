@@ -612,12 +612,23 @@ describe GraphQL::Authorization do
       assert_equal({ "__typename" => "UnauthorizedObject" }, visible_response["data"]["unauthorizedObject"])
     end
 
+    it "skips object authorization with `skip_built_in_authorization`" do
+      query = "{ unauthorizedObject { __typename } }"
+      would_be_hidden_response = auth_execute(query, context: { hide: true, skip_built_in_authorization: true })
+      assert_equal "UnauthorizedObject", would_be_hidden_response["data"]["unauthorizedObject"]["__typename"]
+    end
+
     it "halts on unauthorized mutations" do
       query = "mutation { doUnauthorizedStuff(input: {}) { __typename } }"
       res = auth_execute(query, context: { unauthorized_mutation: true })
       assert_nil res["data"].fetch("doUnauthorizedStuff")
       assert_raises GraphQL::RequiredImplementationMissingError do
         auth_execute(query)
+      end
+
+      # `skip_built_in_authorization` skips the authorization, so it blows up because there's no resolve implementation
+      assert_raises GraphQL::RequiredImplementationMissingError do
+        auth_execute(query, context: { unauthorized_mutation: true, skip_built_in_authorization: true })
       end
     end
 
@@ -709,6 +720,9 @@ describe GraphQL::Authorization do
       assert_nil hidden_response["data"].fetch("unauthorized")
       visible_response = auth_execute(query, root_value: 1)
       assert_equal 1, visible_response["data"]["unauthorized"]
+
+      would_be_hidden_response = auth_execute(query, root_value: :hide, context: { skip_built_in_authorization: true })
+      assert_equal 1, would_be_hidden_response["data"].fetch("unauthorized")
     end
 
     it "halts on unauthorized arguments, using the parent object" do

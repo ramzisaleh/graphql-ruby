@@ -64,7 +64,7 @@ module GraphQL
       # @return [Object] Must return the value of the block
       def trace(key, metadata, &block)
         return yield if @tracers.empty?
-        call_tracers(0, key, metadata, &block)
+        call_tracers(0, @tracers.length - 1, key, metadata, &block)
       end
 
       private
@@ -76,11 +76,12 @@ module GraphQL
       # @param key [String] The current event name
       # @param metadata [Object] The current event object
       # @return Whatever the block returns
-      def call_tracers(idx, key, metadata, &block)
-        if idx == @tracers.length
-          yield
+      def call_tracers(idx, last_idx, key, metadata, &block)
+        if idx == last_idx
+          # This is the last tracer, call it directly
+          @tracers[idx].trace(key, metadata, &block)
         else
-          @tracers[idx].trace(key, metadata) { call_tracers(idx + 1, key, metadata, &block) }
+          @tracers[idx].trace(key, metadata) { call_tracers(idx + 1, last_idx, key, metadata, &block) }
         end
       end
     end

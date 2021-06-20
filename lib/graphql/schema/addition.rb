@@ -150,12 +150,6 @@ module GraphQL
 
         if (prev_type = get_local_type(type.graphql_name))
           if prev_type != type
-            raise DuplicateTypeNamesError.new(
-              type_name: type.graphql_name,
-              first_definition: prev_type,
-              second_definition: type,
-              path: path,
-            )
           else
             # This type was already added
           end
